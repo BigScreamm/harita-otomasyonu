@@ -3,388 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yusuf AYKUŞ Danışmanlık ve Otomasyon - Google Satellite Haritalı Takip</title>
+    <title>Yusuf AYKUŞ | Tarım Otomasyonu</title>
     
-    <!-- Harita Kütüphanesi CSS Bağlantıları (Ücretsiz & Harici Kod istemez) -->
+    <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --primary: #1b5e20;
+            --primary-light: #e8f5e9;
             --accent: #00796b;
-            --accent-light: #e0f2f1;
-            --text-main: #263238;
-            --text-muted: #546e7a;
-            --bg-body: #eceff1;
-            --bg-card: #ffffff;
-            --border-radius: 14px;
-            --shadow: 0 4px 12px rgba(38, 50, 56, 0.08);
+            --bg-dark: #1e293b;
+            --bg-body: #f1f5f9;
+            --surface: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --radius: 12px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        body { display: flex; height: 100vh; background-color: var(--bg-body); color: var(--text-main); overflow: hidden; }
 
-        .container {
-            max-width: 1200px;
-            width: 100%;
-        }
+        /* Sol Menü */
+        .sidebar { width: 250px; background-color: var(--bg-dark); color: white; display: flex; flex-direction: column; }
+        .brand { padding: 20px; font-size: 1.1rem; font-weight: 700; color: var(--success); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .nav-menu { padding: 15px 0; flex-grow: 1; }
+        .nav-item { padding: 15px 20px; display: flex; align-items: center; gap: 12px; color: #cbd5e1; text-decoration: none; cursor: pointer; border-left: 4px solid transparent; }
+        .nav-item:hover, .nav-item.active { background-color: rgba(255,255,255,0.05); color: white; border-left-color: var(--success); }
+        .nav-item i { font-size: 1.4rem; }
 
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+        /* Ana İçerik */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { height: 65px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; }
+        .topbar h2 { font-size: 1.2rem; font-weight: 600; color: var(--primary); }
+        .content-area { padding: 20px 25px; flex-grow: 1; overflow-y: auto; position: relative; }
 
-        .brand-name {
-            color: var(--accent);
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
+        /* Ada Seçim Sekmeleri (Referans sitedeki gibi) */
+        .ada-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { background: var(--surface); border: 1px solid var(--border); padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        h1 {
-            font-size: 2.2rem;
-            color: #1a237e;
-        }
+        /* Harita Alanı */
+        .map-container { height: 40vh; min-height: 300px; background: #ddd; border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); position: relative; z-index: 1;}
+        #map { width: 100%; height: 100%; }
 
-        /* Harita Alanı Tasarımı */
-        .map-container {
-            background: var(--bg-card);
-            padding: 15px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 25px;
-            position: relative;
-        }
+        /* Vana Listesi (Aşağıda görünen kartlar) */
+        .section-title { font-size: 1.1rem; margin-bottom: 15px; color: var(--text-main); display: flex; justify-content: space-between;}
+        .vana-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding-bottom: 30px;}
+        
+        .vana-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
+        .vana-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: #b0bec5; }
+        .vana-card.active-water { border-color: var(--success); background: #f0fdf4; }
+        
+        .vc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .vc-title { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
+        .vc-status { font-size: 0.75rem; padding: 4px 8px; border-radius: 20px; font-weight: 600; }
+        .status-on { background: var(--success); color: white; }
+        .status-off { background: #e2e8f0; color: var(--text-muted); }
+        
+        .vc-details { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+        .vc-action { margin-top: 10px; font-size: 0.8rem; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 5px; }
 
-        #map {
-            height: 500px; /* Harita Yüksekliği */
-            width: 100%;
-            border-radius: 10px;
-            z-index: 1;
-        }
+        /* Sağdan Kayan Operasyon Paneli */
+        .side-panel { position: absolute; top: 0; right: -420px; width: 400px; height: 100%; background: var(--surface); box-shadow: -5px 0 25px rgba(0,0,0,0.1); z-index: 1000; transition: right 0.3s ease; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
+        .side-panel.open { right: 0; }
+        .panel-header { padding: 20px; background: var(--bg-dark); color: white; display: flex; justify-content: space-between; align-items: center; }
+        .panel-close { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; }
+        .panel-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: var(--bg-body); }
+        
+        .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-submit:hover { background: #144517; }
 
-        /* Ada Seçim Menüsü */
-        .ada-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
+        /* Geçmiş Sekmesi */
+        .history-section { display: none; background: var(--surface); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { background: var(--bg-body); font-weight: 600; color: var(--text-muted); }
 
-        .tab-btn {
-            background: #cfd8dc;
-            color: #37474f;
-            border: none;
-            padding: 12px 24px;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .tab-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        /* Özel Harita Bilgi Kutusu Tasarımları (Popup) */
-        .custom-popup .leaflet-popup-content-wrapper {
-            background: var(--bg-card);
-            color: var(--text-main);
-            border-radius: 8px;
-            padding: 5px;
-            font-size: 0.9rem;
-        }
-
-        .popup-title {
-            font-weight: bold;
-            color: var(--primary);
-            font-size: 1.05rem;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 3px;
-        }
-
-        .popup-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            margin-top: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            text-align: center;
-        }
-
-        /* Kontrol Modalı */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(38, 50, 56, 0.6);
-            backdrop-filter: blur(4px);
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: var(--bg-card);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-            position: relative;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 15px; right: 15px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-muted);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #cfd8dc;
-            border-radius: 6px;
-        }
-
-        .btn-submit {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .footer-branding {
-            background: #263238;
-            color: #eceff1;
-            padding: 15px;
-            border-radius: var(--border-radius);
-            text-align: center;
-            font-size: 0.9rem;
-        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="brand-name">⚡ YUSUF AYKUŞ DANIŞMANLIK VE OTOMASYON</div>
-        <h1>Coğrafi Vana Kontrol Sistemi</h1>
+    <!-- Sol Menü -->
+    <div class="sidebar">
+        <div class="brand"><i class='bx bx-leaf'></i> AYKUŞ OTOMASYON</div>
+        <div class="nav-menu">
+            <!-- Sadece çalışan 2 buton var -->
+            <a class="nav-item active" onclick="switchMainTab('dashboard')"><i class='bx bx-map-alt'></i> Harita & Vanalar</a>
+            <a class="nav-item" onclick="switchMainTab('history')"><i class='bx bx-history'></i> İşlem Kayıtları</a>
+        </div>
     </div>
 
-    <!-- Bölge Seçimleri -->
-    <div class="ada-tabs">
-        <button class="tab-btn active" onclick="focusAda(1)">Bölge / ADA 1</button>
-        <button class="tab-btn" onclick="focusAda(2)">Bölge / ADA 2</button>
-        <button class="tab-btn" onclick="focusAda(3)">Bölge / ADA 3</button>
-    </div>
-
-    <!-- Canlı Uydu Haritası Modülü -->
-    <div class="map-container">
-        <div id="map"></div>
-    </div>
-
-    <div class="footer-branding">
-        Yusuf AYKUŞ Danışmanlık ve Otomasyon Uydu Destekli GIS Altyapısı.
-    </div>
-</div>
-
-<!-- Saha Müdahale Modalı -->
-<div class="modal" id="control-modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 style="margin-bottom:15px; color: var(--primary);" id="modal-valve-name">Vana Ayarı</h3>
-        
-        <div class="form-group">
-            <label>Akış Durumu</label>
-            <select id="valve-status-select">
-                <option value="Kapalı">🔴 Akış Kesildi (Beklemede)</option>
-                <option value="Açık">🔵 Akış Aktif (Sulanıyor)</option>
-            </select>
+    <!-- Ana İçerik -->
+    <div class="main-content">
+        <div class="topbar">
+            <h2>Zeytinlik Saha Operasyon Merkezi</h2>
         </div>
 
-        <div class="form-group">
-            <label>Besin Enjeksiyonu</label>
-            <select id="fertilizer-type">
-                <option value="Yok">Uygulama Yok</option>
-                <option value="Azotlu">Azot Karışımı</option>
-                <option value="Potasyum">Potasyum Karışımı</option>
-            </select>
-        </div>
-
-        <button class="btn-submit" onclick="saveValveChanges()">Komutu Gönder</button>
-    </div>
-</div>
-
-<!-- Harita Kütüphanesi Script Bağlantısı -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    // Örnek Koordinatlar (İzmir Seferihisar merkezli örnek arazi koordinatları ayarlandı)
-    const adaCoordinates = {
-        1: { center: [38.1965, 26.8395], zoom: 17, name: "ADA 1 (Ana Arazi)" },
-        2: { center: [38.1990, 26.8420], zoom: 17, name: "ADA 2 (Üst Arazi)" },
-        3: { center: [38.1940, 26.8360], zoom: 17, name: "ADA 3 (Fidanlık)" }
-    };
-
-    let map;
-    let markersLayer = L.layerGroup();
-    let currentAda = 1;
-    let selectedValveId = null;
-
-    // LocalStorage Durum Kontrolü
-    let systemState = JSON.parse(localStorage.getItem('aykus_map_state')) || {};
-
-    if (Object.keys(systemState).length === 0) {
-        // Her adaya harita üzerinde görünecek örnek vana koordinatları tanımlıyoruz
-        systemState = {
-            1: [
-                { id: 1, lat: 38.1962, lng: 26.8391, status: "Kapalı", fertilizer: "Yok", trees: 340 },
-                { id: 2, lat: 38.1966, lng: 26.8396, status: "Açık", fertilizer: "Yok", trees: 410 },
-                { id: 3, lat: 38.1969, lng: 26.8399, status: "Kapalı", fertilizer: "Yok", trees: 290 }
-            ],
-            2: [
-                { id: 1, lat: 38.1988, lng: 26.8418, status: "Kapalı", fertilizer: "Yok", trees: 500 },
-                { id: 2, lat: 38.1992, lng: 26.8423, status: "Kapalı", fertilizer: "Yok", trees: 450 }
-            ],
-            3: [
-                { id: 1, lat: 38.1938, lng: 26.8358, status: "Açık", fertilizer: "Azotlu", trees: 600 },
-                { id: 2, lat: 38.1942, lng: 26.8363, status: "Kapalı", fertilizer: "Yok", trees: 580 }
-            ]
-        };
-        localStorage.setItem('aykus_map_state', JSON.stringify(systemState));
-    }
-
-    // Haritayı Başlatma Fonksiyonu (Google Satellite Katmanlı)
-    function initMap() {
-        // İlk açılışta ADA 1 koordinatlarına odaklan
-        map = L.map('map').setView(adaCoordinates[1].center, adaCoordinates[1].zoom);
-
-        // Tamamen Ücretsiz Google Uydu (Satellite) Katmanı Entegrasyonu
-        L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            maxZoom: 21,
-            attribution: '&copy; Google Maps Satellite'
-        }).addTo(map);
-
-        markersLayer.addTo(map);
-        drawValves();
-    }
-
-    // Vanaları Haritaya Çizme Fonksiyonu
-    function drawValves() {
-        markersLayer.clearLayers(); // Önceki vanaları temizle
-        const valves = systemState[currentAda];
-
-        valves.forEach(v => {
-            // Vananın açık veya kapalı olmasına göre haritadaki rengini belirliyoruz
-            const markerColor = v.status === "Açık" ? "#00e676" : "#ff1744"; 
+        <div class="content-area">
             
-            // Harita üzerinde yuvarlak vana butonları oluşturma
-            const marker = L.circleMarker([v.lat, v.lng], {
-                radius: 10,
-                fillColor: markerColor,
-                color: "#ffffff",
-                weight: 2,
-                fillOpacity: 0.9
-            });
-
-            // Vana üzerine tıklandığında açılacak bilgi penceresi (Popup)
-            const popupContent = `
-                <div class="custom-popup">
-                    <div class="popup-title">Vana No: ${v.id}</div>
-                    <b>Durum:</b> ${v.status === 'Açık' ? '🔵 Aktif Sulanıyor' : '🔴 Kapalı'}<br>
-                    <b>Ağaç Sayısı:</b> ${v.trees}<br>
-                    <b>Gübre Enjeksiyonu:</b> ${v.fertilizer}<br>
-                    <button class="popup-btn" onclick="openControlModal(${v.id})">Durumu Değiştir</button>
+            <!-- Dashboard (Harita ve Vanalar) -->
+            <div id="dashboard-view">
+                
+                <!-- Ada (Bölge) Seçimi -->
+                <div class="ada-tabs" id="ada-tabs-container">
+                    <button class="tab-btn active" onclick="focusAda(1)">Bölge / ADA 1</button>
+                    <button class="tab-btn" onclick="focusAda(2)">Bölge / ADA 2</button>
+                    <button class="tab-btn" onclick="focusAda(3)">Fidanlık / ADA 3</button>
                 </div>
-            `;
 
-            marker.bindPopup(popupContent);
-            markersLayer.addLayer(marker);
-        });
-    }
+                <!-- Uydu Haritası -->
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
 
-    // Seçilen Adaya Gitme ve Haritayı Oraya Kaydırma
-    function focusAda(adaId) {
-        currentAda = adaId;
-        document.querySelectorAll('.tab-btn').forEach((btn, index) => {
-            btn.classList.toggle('active', index === (adaId - 1));
-        });
-        
-        // Haritayı yumuşak bir şekilde yeni adaya kaydır
-        map.flyTo(adaCoordinates[adaId].center, adaCoordinates[adaId].zoom);
-        drawValves();
-    }
+                <!-- Seçili Adaya Ait Vana Kartları Listesi -->
+                <div class="section-title">
+                    <span id="grid-title">ADA 1 Vana Listesi</span>
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">İşlem yapmak için listeden veya haritadan vanaya tıklayın.</span>
+                </div>
+                <div class="vana-grid" id="valves-grid">
+                    <!-- JS ile buraya kartlar dolacak -->
+                </div>
 
-    // Kontrol Panelini Açma
-    function openControlModal(valveId) {
-        selectedValveId = valveId;
-        const valve = systemState[currentAda].find(v => v.id === valveId);
-        
-        document.getElementById('modal-valve-name').innerText = `Vana ${valveId} - Komut Merkezi`;
-        document.getElementById('valve-status-select').value = valve.status;
-        document.getElementById('fertilizer-type').value = valve.fertilizer;
-        
-        document.getElementById('control-modal').style.display = 'flex';
-        map.closePopup(); // Haritadaki küçük popup'ı kapat
-    }
+            </div>
 
-    function closeModal() {
-        document.getElementById('control-modal').style.display = 'none';
-    }
+            <!-- İşlem Kayıtları (Geçmiş) -->
+            <div id="history-view" class="history-section">
+                <h3>Tüm Saha Operasyon Kayıtları</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih & Saat</th>
+                            <th>İşlemi Yapan</th>
+                            <th>Bölge & Vana</th>
+                            <th>Yapılan Zirai İşlem</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
 
-    // Değişiklikleri Veritabanına (LocalStorage) Kaydedip Haritada Canlı Güncelleme
-    function saveValveChanges() {
-        const valve = systemState[currentAda].find(v => v.id === selectedValveId);
-        valve.status = document.getElementById('valve-status-select').value;
-        valve.fertilizer = document.getElementById('fertilizer-type').value;
+            <!-- Sağdan Kayan İşlem Paneli -->
+            <div class="side-panel" id="operation-panel">
+                <div class="panel-header">
+                    <h3 id="panel-title">Vana İşlem Paneli</h3>
+                    <button class="panel-close" onclick="closePanel()"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label>İşlemi Yapan Personel</label>
+                        <select class="form-control" id="op-personnel">
+                            <option value="Yusuf Aykuş">Yusuf Aykuş</option>
+                            <option value="Ahmet (Saha Şefi)">Ahmet (Saha Şefi)</option>
+                            <option value="Mehmet (Operatör)">Mehmet (Operatör)</option>
+                        </select>
+                    </div>
 
-        localStorage.setItem('aykus_map_state', JSON.stringify(systemState));
-        drawValves(); // Haritadaki renkleri güncelle
-        closeModal();
-    }
+                    <div class="form-group">
+                        <label>Vana Akış Durumu</label>
+                        <select class="form-control" id="op-status">
+                            <option value="Kapalı">🔴 Kapalı (Akış Kesildi)</option>
+                            <option value="Açık">🟢 Açık (Sulanıyor)</option>
+                        </select>
+                    </div>
 
-    // Haritayı yükle
-    window.onload = initMap;
-</script>
+                    <div class="form-group">
+                        <label>Ağaçlara Uygulanan İşlem</label>
+                        <select class="form-control" id="op-action">
+                            <option value="Sadece Su">💧 Sadece Sulama</option>
+                            <option value="Azotlu Gübre">🧪 Azotlu Gübre Enjeksiyonu</option>
+                            <option value="Organik Gübre">🌿 Organik Sıvı Gübre</option>
+                            <option value="İlaçlama">🛡️ İlaçlama (Bordo Bulamacı vb.)</option>
+                            <option value="Budama">✂️ Budama İşlemi Tamamlandı</option>
+                            <option value="Kontrol">👁️ Sadece Kontrol Edildi</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Saha Notu (İsteğe Bağlı)</label>
+                        <textarea class="form-control" id="op-notes" rows="3" placeholder="Örn: 3. sıradaki boruda ufak sızıntı var..."></textarea>
+                    </div>
+
+                    <button class="btn-submit" onclick="saveOperation()">Kaydet ve Uygula</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scriptler -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Veri Modeli
+        const adaCoordinates = {
+            1: { center: [38.1965, 26.8395], zoom: 17, name: "Bölge / ADA 1" },
+            2: { center: [38.1990, 26.8420], zoom: 17, name: "Bölge / ADA 2" },
+            3: { center: [38.1940, 26.8360], zoom: 17, name: "Fidanlık / ADA 3" }
+        };
+
+        // Yerel Veritabanı (LocalStorage)
+        let appData = JSON.parse(localStorage.getItem('aykus_final_db')) || {
+            valves: {
+                1: [
+                    { id: 101, lat: 38.1962, lng: 26.8391, status: "Kapalı", lastAction: "Kontrol", trees: 340, area: "ADA 1" },
+                    { id: 102, lat: 38.1966, lng: 26.8396, status: "Kapalı", lastAction: "Sadece Su", trees: 410, area: "ADA 1" },
+                    { id: 103, lat: 38.1969, lng: 26.8399, status: "Açık", lastAction: "Organik Gübre", trees: 290, area: "ADA 1" }
+                ],
+                2: [
+                    { id: 201, lat: 38.1988, lng: 26.8418, status: "Kapalı", lastAction: "Budama", trees: 500, area: "ADA 2" },
+                    { id: 202, lat: 38.1992, lng: 26.8423, status: "Kapalı", lastAction: "Kontrol", trees: 450, area: "ADA 2" }
+                ],
+                3: [
+                    { id: 301, lat: 38.1938, lng: 26.8358, status: "Açık", lastAction: "Azotlu Gübre", trees: 600, area: "ADA 3" },
+                    { id: 302, lat: 38.1942, lng: 26.8363, status: "Kapalı", lastAction: "Sadece Su", trees: 580, area: "ADA 3" }
+                ]
+            },
+            logs: []
+        };
+
+        let map;
+        let markersLayer = L.layerGroup();
+        let currentAda = 1;
+        let selectedValve = null;
+
+        // Sol Menü Geçişleri
+        function switchMainTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            if(tab === 'dashboard') {
+                document.getElementById('dashboard-view').style.display = 'block';
+                document.getElementById('history-view').style.display = 'none';
+                setTimeout(() => map.invalidateSize(), 100); // Harita boyutunu düzelt
+            } else {
+                document.getElementById('dashboard-view').style.display = 'none';
+                document.getElementById('history-view').style.display = 'block';
+                renderHistory();
+            }
+        }
+
+        // Haritayı Başlat
+        function initMap() {
+            map = L.map('map').setView(adaCoordinates[1].center, adaCoordinates[1].zoom);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 21,
+                attribution: 'Google Satellite'
+            }).addTo(map);
+            
+            markersLayer.addTo(map);
+            focusAda(1); // İlk açılışta Ada 1'i yükle
+        }
+
+        // Ada Seçimi (Hem haritayı kaydırır, hem vanaları çizer, hem de kartları listeler)
+        function focusAda(adaId) {
+            currentAda = adaId;
+            
+            // Sekme butonlarının rengini ayarla
+            document.querySelectorAll('.tab-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index === (adaId - 1));
+            });
+            
+            document.getElementById('grid-title').innerText = `${adaCoordinates[adaId].name} - Vana Listesi`;
+            
+            // Haritayı ilgili adaya uçur
+            map.flyTo(adaCoordinates[adaId].center, adaCoordinates[adaId].zoom);
+            
+            drawMapMarkers();
+            drawGridCards();
+        }
+
+        // Harita Üzerindeki Vanaları (Noktaları) Çiz
+        function drawMapMarkers() {
+            markersLayer.clearLayers();
+            const valves = appData.valves[currentAda];
+
+            valves.forEach(v => {
+                const markerColor = v.status === "Açık" ? "#10b981" : "#ef4444"; 
+                const marker = L.circleMarker([v.lat, v.lng], {
+                    radius: 12,
+                    fillColor: markerColor,
+                    color: "#ffffff",
+                    weight: 2,
+                    fillOpacity: 1
+                });
+
+                // Haritadaki noktaya tıklanınca panel açılsın
+                marker.on('click', () => openPanel(currentAda, v.id));
+                
+                // Üzerine gelince minik ipucu versin
+                marker.bindTooltip(`Vana ${v.id} - ${v.status}`, {direction: 'top'});
+                markersLayer.addLayer(marker);
+            });
+        }
+
+        // Haritanın Altındaki Vana Kutucuklarını (Grid) Çiz
+        function drawGridCards() {
+            const container = document.getElementById('valves-grid');
+            container.innerHTML = '';
+            const valves = appData.valves[currentAda];
+
+            valves.forEach(v => {
+                const isOp = v.status === 'Açık';
+                const cardHtml = `
+                    <div class="vana-card ${isOp ? 'active-water' : ''}" onclick="openPanel(${currentAda}, ${v.id})">
+                        <div class="vc-header">
+                            <span class="vc-title">Vana ${v.id}</span>
+                            <span class="vc-status ${isOp ? 'status-on' : 'status-off'}">${v.status}</span>
+                        </div>
+                        <div class="vc-details">
+                            🌲 ${v.trees} Ağaç<br>
+                        </div>
+                        <div class="vc-action">
+                            <i class='bx bx-history'></i> Son İşlem: ${v.lastAction}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        // Sağ Paneli Aç
+        function openPanel(adaId, valveId) {
+            selectedValve = appData.valves[adaId].find(v => v.id === valveId);
+            
+            document.getElementById('panel-title').innerText = `${selectedValve.area} - Vana ${selectedValve.id}`;
+            document.getElementById('op-status').value = selectedValve.status;
+            document.getElementById('op-action').value = selectedValve.lastAction;
+            document.getElementById('op-notes').value = '';
+
+            document.getElementById('operation-panel').classList.add('open');
+        }
+
+        function closePanel() {
+            document.getElementById('operation-panel').classList.remove('open');
+            selectedValve = null;
+        }
+
+        // Yapılan İşlemi Kaydet
+        function saveOperation() {
+            const personnel = document.getElementById('op-personnel').value;
+            const status = document.getElementById('op-status').value;
+            const action = document.getElementById('op-action').value;
+            const notes = document.getElementById('op-notes').value;
+            
+            // Vanayı güncelle
+            selectedValve.status = status;
+            selectedValve.lastAction = action;
+
+            // Log Kaydı (Geçmişe) Ekle
+            const newLog = {
+                date: new Date().toLocaleString('tr-TR'),
+                personnel: personnel,
+                valve: `Vana ${selectedValve.id} (${selectedValve.area})`,
+                action: action,
+                status: status,
+                notes: notes
+            };
+            appData.logs.unshift(newLog); // En başa ekler
+            
+            // Veriyi Tarayıcıya Kaydet
+            localStorage.setItem('aykus_final_db', JSON.stringify(appData));
+            
+            // Harita ve Kartları Güncelle
+            drawMapMarkers();
+            drawGridCards();
+            closePanel();
+        }
+
+        // İşlem Kayıtları Tablosunu Çiz
+        function renderHistory() {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+
+            if(appData.logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">Henüz hiçbir işlem yapılmadı.</td></tr>';
+                return;
+            }
+
+            appData.logs.forEach(log => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${log.date}</td>
+                        <td><strong>${log.personnel}</strong></td>
+                        <td>${log.valve}</td>
+                        <td style="color:var(--primary); font-weight:500;">${log.action}</td>
+                        <td>${log.status === 'Açık' ? '🟢 Açık' : '🔴 Kapalı'}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.onload = initMap;
+    </script>
 </body>
 </html>
